@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Treasure Hunt — Enter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:    #c9963f;
+      --gold-lt: #e8b96a;
+      --gold-dk: #7a5a1e;
+      --bg:      #0a0c0f;
+      --bg2:     #111318;
+      --bg3:     #1a1e26;
+      --border:  #2a2e3a;
+      --text:    #e8dcc8;
+      --text-dim:#8a7f6e;
+      --red:     #c0392b;
+      --green:   #27ae60;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 17px;
+      overflow-x: hidden;
+    }
+
+    /* Stars background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 10% 20%, rgba(255,220,130,.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 80% 10%, rgba(255,220,130,.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 50% 60%, rgba(255,220,130,.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,220,130,.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 40%, rgba(255,220,130,.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 90% 70%, rgba(255,220,130,.5) 0%, transparent 100%),
+        radial-gradient(2px 2px at 20% 50%, rgba(255,220,130,.2) 0%, transparent 100%),
+        radial-gradient(2px 2px at 60% 85%, rgba(255,220,130,.2) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Radial vignette */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,.7) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Compass rose ── */
+    .compass {
+      width: 90px;
+      height: 90px;
+      margin-bottom: 1.5rem;
+      animation: spin-slow 20s linear infinite;
+      opacity: .85;
+      filter: drop-shadow(0 0 12px rgba(201,150,63,.4));
+    }
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      font-weight: 900;
+      letter-spacing: .08em;
+      color: var(--gold-lt);
+      text-shadow: 0 0 30px rgba(201,150,63,.4);
+      margin-bottom: .3rem;
+      text-align: center;
+    }
+    .subtitle {
+      font-family: 'Crimson Pro', serif;
+      font-style: italic;
+      color: var(--text-dim);
+      font-size: 1rem;
+      letter-spacing: .12em;
+      margin-bottom: 2.5rem;
+      text-align: center;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      width: 100%;
+      max-width: 420px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(201,150,63,.08);
+      animation: rise .5s ease both;
+    }
+    @keyframes rise { from { opacity: 0; transform: translateY(20px); } }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      flex: 1;
+      padding: .9rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Cinzel', serif;
+      font-size: .8rem;
+      letter-spacing: .1em;
+      color: var(--text-dim);
+      transition: color .2s, background .2s;
+    }
+    .tab:hover { color: var(--text); background: rgba(255,255,255,.03); }
+    .tab.active {
+      color: var(--gold-lt);
+      background: rgba(201,150,63,.06);
+      border-bottom: 2px solid var(--gold);
+    }
+
+    .form-panel { display: none; padding: 2rem; }
+    .form-panel.active { display: block; }
+
+    label {
+      display: block;
+      font-size: .78rem;
+      letter-spacing: .12em;
+      font-family: 'Cinzel', serif;
+      color: var(--text-dim);
+      margin-bottom: .4rem;
+      margin-top: 1.2rem;
+    }
+    label:first-of-type { margin-top: 0; }
+
+    input {
+      width: 100%;
+      padding: .75rem 1rem;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 1px;
+      color: var(--text);
+      font-family: 'Crimson Pro', serif;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input:focus {
+      border-color: var(--gold-dk);
+      box-shadow: 0 0 0 3px rgba(201,150,63,.12);
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      margin-top: 1.8rem;
+      padding: .85rem;
+      background: linear-gradient(135deg, var(--gold-dk), var(--gold));
+      border: none;
+      border-radius: 1px;
+      color: #0a0c0f;
+      font-family: 'Cinzel', serif;
+      font-size: .85rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn:hover { opacity: .9; }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .msg {
+      margin-top: 1rem;
+      padding: .75rem 1rem;
+      border-radius: 1px;
+      font-size: .9rem;
+      display: none;
+    }
+    .msg.error { background: rgba(192,57,43,.15); border: 1px solid rgba(192,57,43,.4); color: #e07060; display: block; }
+    .msg.success { background: rgba(39,174,96,.15); border: 1px solid rgba(39,174,96,.4); color: #6dcf98; display: block; }
+
+    .footer-links {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: .85rem;
+      color: var(--text-dim);
+    }
+    .footer-links a {
+      color: var(--gold-dk);
+      text-decoration: none;
+      letter-spacing: .06em;
+      transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--gold-lt); }
+
+    /* ── Decorative lines ── */
+    .ornament {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      margin: .5rem 0 0;
+      color: var(--gold-dk);
+      font-size: .6rem;
+      letter-spacing: .3em;
+      text-align: center;
+    }
+    .ornament::before, .ornament::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-dk), transparent);
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- Compass SVG -->
+    <svg class="compass" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="47" stroke="#c9963f" stroke-width="1.2" opacity=".5"/>
+      <circle cx="50" cy="50" r="40" stroke="#c9963f" stroke-width=".6" opacity=".3"/>
+      <!-- Cardinal points -->
+      <text x="50" y="14" text-anchor="middle" font-family="serif" font-size="8" fill="#e8b96a" font-weight="bold">N</text>
+      <text x="50" y="92" text-anchor="middle" font-family="serif" font-size="8" fill="#c9963f">S</text>
+      <text x="91" y="54" text-anchor="middle" font-family="serif" font-size="8" fill="#c9963f">E</text>
+      <text x="9"  y="54" text-anchor="middle" font-family="serif" font-size="8" fill="#c9963f">W</text>
+      <!-- Needle -->
+      <polygon points="50,18 53,50 50,55 47,50" fill="#e8b96a"/>
+      <polygon points="50,82 53,50 50,45 47,50" fill="#5a3a1a"/>
+      <circle cx="50" cy="50" r="4" fill="#c9963f"/>
+      <!-- Tick marks -->
+      <line x1="50" y1="5"  x2="50" y2="10" stroke="#c9963f" stroke-width=".8" opacity=".6"/>
+      <line x1="50" y1="90" x2="50" y2="95" stroke="#c9963f" stroke-width=".8" opacity=".6"/>
+      <line x1="5"  y1="50" x2="10" y2="50" stroke="#c9963f" stroke-width=".8" opacity=".6"/>
+      <line x1="90" y1="50" x2="95" y2="50" stroke="#c9963f" stroke-width=".8" opacity=".6"/>
+    </svg>
+
+    <h1>TREASURE HUNT</h1>
+    <p class="subtitle">— Eight Clues. One Legend. —</p>
+
+    <div class="card">
+      <div class="form-panel active" id="start-panel">
+        <div class="ornament">⧖</div>
+        <label for="hostel-name">HOSTEL NAME</label>
+        <input id="hostel-name" type="text" placeholder="Enter hostel name" autocomplete="off" />
+
+        <label for="candidate-1">CANDIDATE 1</label>
+        <input id="candidate-1" type="text" placeholder="Enter first candidate" autocomplete="off" />
+
+        <label for="candidate-2">CANDIDATE 2</label>
+        <input id="candidate-2" type="text" placeholder="Enter second candidate" autocomplete="off" />
+
+        <label for="candidate-3">CANDIDATE 3</label>
+        <input id="candidate-3" type="text" placeholder="Enter third candidate" autocomplete="off" />
+
+        <button class="btn" id="start-btn" onclick="startQuiz()">START QUIZ</button>
+        <div class="msg" id="start-msg"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ── CONFIG — change this to your deployed backend URL ──
+    const API = "http://localhost:3003";
+    // Example: const API = "https://treasure-hunt-api.onrender.com";
+
+    function showMsg(id, text, type) {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.className = 'msg ' + type;
+    }
+
+    async function startQuiz() {
+      const btn = document.getElementById('start-btn');
+      const hostelName = document.getElementById('hostel-name').value.trim();
+      const candidate1 = document.getElementById('candidate-1').value.trim();
+      const candidate2 = document.getElementById('candidate-2').value.trim();
+      const candidate3 = document.getElementById('candidate-3').value.trim();
+
+      const candidates = [candidate1, candidate2, candidate3].filter(Boolean);
+
+      if (!hostelName || !candidate1 || !candidate2 || !candidate3) {
+        return showMsg('start-msg', 'Please fill hostel name and all 3 candidate names.', 'error');
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Starting...';
+
+      try {
+        const res = await fetch(`${API}/api/auth/quick-start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hostelName, candidates }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showMsg('start-msg', data.error || 'Could not start quiz.', 'error');
+        } else {
+          sessionStorage.setItem('th_token', data.token);
+          sessionStorage.setItem('th_team', `${hostelName} • ${candidates.join(', ')}`);
+          window.location.href = 'game.html';
+        }
+      } catch {
+        showMsg('start-msg', 'Cannot reach server. Is the backend running?', 'error');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'START QUIZ';
+    }
+
+    // Allow pressing Enter to submit
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      startQuiz();
+    });
+
+    // Redirect if already logged in
+    if (sessionStorage.getItem('th_token')) {
+      window.location.href = 'game.html';
+    }
+  </script>
+</body>
+</html>

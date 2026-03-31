@@ -1,0 +1,8 @@
+node_modules/
+.env
+*.db
+*.db-shm
+*.db-wal
+
+# Keep questions.js out of public repos!
+# questions.js

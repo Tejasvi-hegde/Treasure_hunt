@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Treasure Hunt — The Quest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:    #c9963f;
+      --gold-lt: #e8b96a;
+      --gold-dk: #7a5a1e;
+      --bg:      #0a0c0f;
+      --bg2:     #111318;
+      --bg3:     #1a1e26;
+      --border:  #2a2e3a;
+      --text:    #e8dcc8;
+      --text-dim:#8a7f6e;
+      --red:     #c0392b;
+      --green:   #27ae60;
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 17px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 15% 25%, rgba(255,220,130,.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 75% 15%, rgba(255,220,130,.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 55% 65%, rgba(255,220,130,.25) 0%, transparent 100%),
+        radial-gradient(1px 1px at 35% 82%, rgba(255,220,130,.35) 0%, transparent 100%),
+        radial-gradient(1px 1px at 88% 45%, rgba(255,220,130,.3) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .85rem 2rem;
+      background: rgba(10,12,15,.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand {
+      font-family: 'Cinzel', serif;
+      font-size: .9rem;
+      letter-spacing: .15em;
+      color: var(--gold-lt);
+    }
+    .team-pill {
+      font-size: .8rem;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: .3rem .9rem;
+      letter-spacing: .06em;
+    }
+    .team-name-span { color: var(--gold); }
+    .logout-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: .75rem;
+      letter-spacing: .08em;
+      font-family: 'Cinzel', serif;
+      margin-left: 1rem;
+      transition: color .2s;
+    }
+    .logout-btn:hover { color: var(--text); }
+
+    /* ── Main layout ── */
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 4rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Progress bar ── */
+    .progress-wrap {
+      margin-bottom: 2.5rem;
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Cinzel', serif;
+      font-size: .7rem;
+      letter-spacing: .12em;
+      color: var(--text-dim);
+      margin-bottom: .5rem;
+    }
+    .progress-track {
+      height: 4px;
+      background: var(--bg3);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold-dk), var(--gold-lt));
+      border-radius: 2px;
+      transition: width .8s cubic-bezier(.23,1,.32,1);
+    }
+    .progress-dots {
+      display: flex;
+      gap: .4rem;
+      margin-top: .7rem;
+    }
+    .dot {
+      flex: 1;
+      height: 3px;
+      background: var(--bg3);
+      border-radius: 2px;
+      transition: background .4s;
+    }
+    .dot.solved { background: var(--gold-dk); }
+    .dot.current { background: var(--gold-lt); animation: pulse-dot 1.5s ease infinite; }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+
+    /* ── Question card ── */
+    .q-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 50px rgba(0,0,0,.5), 0 0 0 1px rgba(201,150,63,.06);
+      animation: fade-in .4s ease both;
+    }
+    @keyframes fade-in { from { opacity: 0; transform: translateY(12px); } }
+
+    .q-number {
+      font-family: 'Cinzel', serif;
+      font-size: .7rem;
+      letter-spacing: .2em;
+      color: var(--gold-dk);
+      margin-bottom: 1.2rem;
+    }
+
+    .q-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 1.2rem 0;
+    }
+
+    .q-text {
+      font-size: 1.3rem;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--text);
+      font-style: italic;
+    }
+
+    .q-image {
+      width: 100%;
+      max-height: 280px;
+      object-fit: cover;
+      border-radius: 1px;
+      margin: 1.5rem 0 .5rem;
+      border: 1px solid var(--border);
+    }
+
+    .q-image-pair {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: .8rem;
+      margin: 1.5rem 0 .5rem;
+    }
+    .q-image-pair img {
+      width: 42%;
+      max-height: 220px;
+      object-fit: contain;
+      border-radius: 1px;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+    }
+    .q-image-pair .join-text {
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      letter-spacing: .08em;
+      color: var(--gold-lt);
+      text-transform: lowercase;
+    }
+
+    .q-audio {
+      width: 100%;
+      margin: 1.5rem 0 .5rem;
+    }
+
+    /* ── Answer input ── */
+    .answer-section { margin-top: 2rem; }
+
+    label.ans-label {
+      display: block;
+      font-family: 'Cinzel', serif;
+      font-size: .7rem;
+      letter-spacing: .15em;
+      color: var(--text-dim);
+      margin-bottom: .6rem;
+    }
+
+    .answer-row {
+      display: flex;
+      gap: .5rem;
+    }
+
+    input#answer {
+      flex: 1;
+      padding: .8rem 1rem;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 1px;
+      color: var(--text);
+      font-family: 'Crimson Pro', serif;
+      font-size: 1.05rem;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input#answer:focus {
+      border-color: var(--gold-dk);
+      box-shadow: 0 0 0 3px rgba(201,150,63,.1);
+    }
+    input#answer.shake {
+      animation: shake .35s ease;
+      border-color: var(--red);
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    input#answer.glow-green {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(39,174,96,.15);
+    }
+
+    .submit-btn {
+      padding: .8rem 1.6rem;
+      background: linear-gradient(135deg, var(--gold-dk), var(--gold));
+      border: none;
+      border-radius: 1px;
+      color: #0a0c0f;
+      font-family: 'Cinzel', serif;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity .2s;
+    }
+    .submit-btn:hover { opacity: .9; }
+    .submit-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Feedback ── */
+    .feedback {
+      margin-top: .9rem;
+      padding: .7rem 1rem;
+      border-radius: 1px;
+      font-size: .95rem;
+      display: none;
+      animation: fade-in .2s ease;
+    }
+    .feedback.wrong {
+      display: block;
+      background: rgba(192,57,43,.12);
+      border: 1px solid rgba(192,57,43,.35);
+      color: #e07060;
+    }
+    .feedback.right {
+      display: block;
+      background: rgba(39,174,96,.12);
+      border: 1px solid rgba(39,174,96,.35);
+      color: #6dcf98;
+    }
+
+    /* ── Rate limit warning ── */
+    .rate-warning {
+      margin-top: .6rem;
+      font-size: .82rem;
+      color: #e0a050;
+      display: none;
+    }
+    .rate-warning.show { display: block; }
+
+    /* ── Loading ── */
+    #loading-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 1rem;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 2px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text {
+      font-family: 'Cinzel', serif;
+      font-size: .75rem;
+      letter-spacing: .15em;
+      color: var(--text-dim);
+    }
+
+    /* ── Finished screen ── */
+    #finished-screen {
+      display: none;
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+    .trophy {
+      font-size: 5rem;
+      display: block;
+      margin-bottom: 1.5rem;
+      animation: bounce 1s ease infinite alternate;
+    }
+    @keyframes bounce { to { transform: translateY(-12px); } }
+    .finished-title {
+      font-family: 'Cinzel', serif;
+      font-size: 2.2rem;
+      color: var(--gold-lt);
+      margin-bottom: .8rem;
+    }
+    .finished-sub { color: var(--text-dim); font-style: italic; font-size: 1.1rem; }
+    .leaderboard-link {
+      display: inline-block;
+      margin-top: 2rem;
+      padding: .75rem 2rem;
+      border: 1px solid var(--gold-dk);
+      color: var(--gold-lt);
+      text-decoration: none;
+      font-family: 'Cinzel', serif;
+      font-size: .8rem;
+      letter-spacing: .1em;
+      transition: all .2s;
+    }
+    .leaderboard-link:hover { background: rgba(201,150,63,.1); }
+
+    /* ── Timer display ── */
+    .timer-row {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .stat-box {
+      flex: 1;
+      min-width: 120px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      padding: .7rem 1rem;
+      border-radius: 1px;
+    }
+    .stat-label {
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .12em;
+      color: var(--text-dim);
+      margin-bottom: .2rem;
+    }
+    .stat-value {
+      font-size: 1.1rem;
+      color: var(--gold-lt);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span class="brand">⚓ TREASURE HUNT</span>
+    <div style="display:flex;align-items:center;">
+      <span class="team-pill">⚔ <span class="team-name-span" id="header-team">—</span></span>
+      <button class="logout-btn" onclick="logout()">LOGOUT</button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Loading -->
+    <div id="loading-screen">
+      <div class="spinner"></div>
+      <p class="loading-text">LOADING YOUR QUEST...</p>
+    </div>
+
+    <!-- Active game -->
+    <div id="game-screen" style="display:none;">
+      <div class="timer-row">
+        <div class="stat-box">
+          <div class="stat-label">ELAPSED TIME</div>
+          <div class="stat-value" id="elapsed-time">00:00:00</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">CLUES SOLVED</div>
+          <div class="stat-value" id="clues-solved">0 / 8</div>
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span id="q-label">CLUE 1 OF 8</span>
+          <span id="q-pct">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-bar" id="prog-bar" style="width:0%"></div>
+        </div>
+        <div class="progress-dots" id="dots"></div>
+      </div>
+
+      <div class="q-card" id="q-card">
+        <div class="q-number" id="q-number">CLUE · ONE</div>
+        <div class="q-divider"></div>
+        <p class="q-text" id="q-text"></p>
+        <img id="q-image" class="q-image" style="display:none;" alt="Clue image" />
+        <div id="q-image-pair" class="q-image-pair">
+          <img id="q-image-1" alt="Clue image one" />
+          <span id="q-image-join" class="join-text">in</span>
+          <img id="q-image-2" alt="Clue image two" />
+        </div>
+        <audio id="q-audio" class="q-audio" style="display:none;" controls preload="metadata"></audio>
+
+        <div class="answer-section">
+          <label class="ans-label">YOUR ANSWER</label>
+          <div class="answer-row">
+            <input type="text" id="answer" placeholder="Type your answer here..." autocomplete="off" autocorrect="off" spellcheck="false" />
+            <button class="submit-btn" id="submit-btn" onclick="submitAnswer()">SUBMIT</button>
+          </div>
+          <div class="feedback" id="feedback"></div>
+          <div class="rate-warning" id="rate-warn">⚠ Too many attempts — please wait a moment.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Finished -->
+    <div id="finished-screen">
+      <span class="trophy">🏆</span>
+      <h2 class="finished-title">TREASURE FOUND!</h2>
+      <p class="finished-sub">You have conquered all eight clues and claimed your glory.</p>
+    </div>
+
+  </main>
+
+  <script>
+    // ── CONFIG ─────────────────────────────────────────────
+    const API = "http://localhost:3003";
+    // Example: const API = "https://treasure-hunt-api.onrender.com";
+
+    const ORDINALS = ["ZERO","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT"];
+
+    let token     = sessionStorage.getItem('th_token');
+    let teamName  = sessionStorage.getItem('th_team');
+    let startedAt = null;
+    let timerInterval = null;
+    let currentQ  = 1;
+    let totalQ    = 8;
+    let submitLocked = false;
+
+    // ── Auth guard ──────────────────────────────────────────
+    if (!token) { window.location.href = 'index.html'; }
+
+    document.getElementById('header-team').textContent = teamName || '—';
+
+    // ── Utility ─────────────────────────────────────────────
+    function authHeaders() {
+      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    }
+
+    function fmtTime(secs) {
+      const h = Math.floor(secs / 3600);
+      const m = Math.floor((secs % 3600) / 60);
+      const s = secs % 60;
+      return [h,m,s].map(v => String(v).padStart(2,'0')).join(':');
+    }
+
+    function startTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (!startedAt) return;
+        const elapsed = Math.floor((Date.now() - new Date(startedAt + 'Z').getTime()) / 1000);
+        document.getElementById('elapsed-time').textContent = fmtTime(Math.max(0, elapsed));
+      }, 1000);
+    }
+
+    function updateProgress(current, total) {
+      const solved = current - 1;
+      const pct = Math.round((solved / total) * 100);
+      document.getElementById('q-label').textContent = `CLUE ${current} OF ${total}`;
+      document.getElementById('q-pct').textContent = pct + '%';
+      document.getElementById('prog-bar').style.width = pct + '%';
+      document.getElementById('clues-solved').textContent = `${solved} / ${total}`;
+
+      // Dots
+      const dotsEl = document.getElementById('dots');
+      dotsEl.innerHTML = '';
+      for (let i = 1; i <= total; i++) {
+        const d = document.createElement('div');
+        d.className = 'dot' + (i < current ? ' solved' : i === current ? ' current' : '');
+        dotsEl.appendChild(d);
+      }
+    }
+
+    function renderQuestion(q, qNum) {
+      document.getElementById('q-number').textContent = `CLUE · ${ORDINALS[qNum] || qNum}`;
+      const qTextEl = document.getElementById('q-text');
+      if (qNum === 1) {
+        qTextEl.innerHTML = q.text;
+      } else {
+        qTextEl.textContent = q.text;
+      }
+
+      const img = document.getElementById('q-image');
+      const imagePair = document.getElementById('q-image-pair');
+      const imageOne = document.getElementById('q-image-1');
+      const imageTwo = document.getElementById('q-image-2');
+      const imageJoin = document.getElementById('q-image-join');
+
+      if (q.imageUrl && q.imageUrl2) {
+        imageOne.src = q.imageUrl;
+        imageTwo.src = q.imageUrl2;
+        imageJoin.textContent = q.imageJoinText || 'in';
+        imagePair.style.display = 'flex';
+        img.style.display = 'none';
+      } else if (q.imageUrl) {
+        img.src = q.imageUrl;
+        img.style.display = 'block';
+        imagePair.style.display = 'none';
+      } else {
+        img.style.display = 'none';
+        imagePair.style.display = 'none';
+      }
+
+      const audio = document.getElementById('q-audio');
+      audio.pause();
+      audio.currentTime = 0;
+      if (q.audioUrl) {
+        audio.src = q.audioUrl;
+        audio.style.display = 'block';
+      } else {
+        audio.removeAttribute('src');
+        audio.style.display = 'none';
+      }
+
+      document.getElementById('answer').value = '';
+      document.getElementById('feedback').className = 'feedback';
+      document.getElementById('feedback').textContent = '';
+      document.getElementById('rate-warn').classList.remove('show');
+
+      // Re-animate card
+      const card = document.getElementById('q-card');
+      card.style.animation = 'none';
+      requestAnimationFrame(() => { card.style.animation = ''; });
+
+      currentQ = qNum;
+      totalQ   = q.total;
+      updateProgress(qNum, q.total);
+    }
+
+    function replaceNorwegianWithJapanese(text) {
+      return text.replace(/\bnorwegian\b/gi, (match) =>
+        match[0] === match[0].toUpperCase() ? 'Japanese' : 'japanese'
+      );
+    }
+
+    function replaceMorseFragments(text) {
+      const targetSequence = ['..-.', '..-', '-.-.', '-.-', '-.--', '..-'];
+      let index = 0;
+
+      return text.replace(/[.-]{2,}/g, () => {
+        const replacement = targetSequence[index] || targetSequence[targetSequence.length - 1];
+        index += 1;
+        return replacement;
+      });
+    }
+
+    document.getElementById('q-text').addEventListener('copy', (event) => {
+      if (currentQ !== 1 && currentQ !== 3) {
+        event.preventDefault();
+        event.clipboardData.setData('text/plain', '');
+        return;
+      }
+      const selected = window.getSelection().toString().trim();
+      const source = selected || document.getElementById('q-text').innerText;
+      let transformed = source;
+
+      if (currentQ === 1) {
+        transformed = replaceNorwegianWithJapanese(source);
+      }
+
+      if (currentQ === 3) {
+        transformed = replaceMorseFragments(source);
+      }
+
+      event.preventDefault();
+      event.clipboardData.setData('text/plain', transformed);
+    });
+
+    // ── Load initial state ──────────────────────────────────
+    async function init() {
+      try {
+        const res = await fetch(`${API}/api/game/start`, {
+          method: 'POST',
+          headers: authHeaders(),
+        });
+
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+
+        document.getElementById('loading-screen').style.display = 'none';
+
+        if (data.isFinished || data.finished) {
+          document.getElementById('finished-screen').style.display = 'block';
+          return;
+        }
+
+        startedAt = data.startedAt || new Date().toISOString().replace('Z','');
+        document.getElementById('game-screen').style.display = 'block';
+        renderQuestion(data.question, data.currentQuestion);
+        startTimer();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loading-screen').innerHTML =
+          '<p style="color:#e07060;font-family:Cinzel,serif;font-size:.8rem;letter-spacing:.1em;">CANNOT REACH SERVER</p>';
+      }
+    }
+
+    // ── Submit answer ───────────────────────────────────────
+    async function submitAnswer() {
+      if (submitLocked) return;
+      const input = document.getElementById('answer');
+      const answer = input.value.trim();
+      if (!answer) return;
+
+      submitLocked = true;
+      document.getElementById('submit-btn').disabled = true;
+
+      const fb = document.getElementById('feedback');
+      fb.className = 'feedback';
+      fb.textContent = '';
+
+      try {
+        const res = await fetch(`${API}/api/game/submit`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ answer }),
+        });
+
+        const data = await res.json();
+
+        if (res.status === 429) {
+          document.getElementById('rate-warn').classList.add('show');
+          input.classList.add('shake');
+          setTimeout(() => input.classList.remove('shake'), 400);
+          submitLocked = false;
+          document.getElementById('submit-btn').disabled = false;
+          return;
+        }
+
+        if (data.correct) {
+          input.classList.add('glow-green');
+          fb.className = 'feedback right';
+          fb.textContent = data.message || '✅ Correct!';
+
+          setTimeout(() => {
+            input.classList.remove('glow-green');
+
+            if (data.finished) {
+              clearInterval(timerInterval);
+              document.getElementById('game-screen').style.display = 'none';
+              document.getElementById('finished-screen').style.display = 'block';
+            } else {
+              renderQuestion(data.nextQuestion, data.currentQuestion);
+            }
+            submitLocked = false;
+            document.getElementById('submit-btn').disabled = false;
+          }, 1200);
+        } else {
+          input.classList.add('shake');
+          setTimeout(() => input.classList.remove('shake'), 400);
+          fb.className = 'feedback wrong';
+          fb.textContent = data.error || data.message || '✗ Incorrect. Keep thinking!';
+          submitLocked = false;
+          document.getElementById('submit-btn').disabled = false;
+        }
+      } catch {
+        fb.className = 'feedback wrong';
+        fb.textContent = 'Connection error. Please try again.';
+        submitLocked = false;
+        document.getElementById('submit-btn').disabled = false;
+      }
+    }
+
+    // Allow Enter key to submit
+    document.getElementById('answer').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitAnswer();
+    });
+
+    function logout() {
+      sessionStorage.removeItem('th_token');
+      sessionStorage.removeItem('th_team');
+      clearInterval(timerInterval);
+      window.location.href = 'index.html';
+    }
+
+    // Boot
+    init();
+  </script>
+</body>
+</html>
