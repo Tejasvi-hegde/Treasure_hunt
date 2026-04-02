@@ -19,6 +19,7 @@ if (!process.env.ADMIN_KEY || process.env.ADMIN_KEY.length < 8) {
 }
 
 const app = express();
+app.set("trust proxy", 1);
 
 // ── Security middleware ───────────────────────────────────────
 app.use(helmet({
