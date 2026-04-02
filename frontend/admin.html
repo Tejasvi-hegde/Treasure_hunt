@@ -173,7 +173,7 @@
       <div class="stat-card"><div class="val" id="s-teams">—</div><div class="lbl">TOTAL TEAMS</div></div>
       <div class="stat-card"><div class="val" id="s-finished">—</div><div class="lbl">FINISHED</div></div>
       <div class="stat-card"><div class="val" id="s-active">—</div><div class="lbl">STILL HUNTING</div></div>
-      <div class="stat-card"><div class="val" id="s-attempts">—</div><div class="lbl">TOTAL ATTEMPTS</div></div>
+
     </div>
 
     <!-- Leaderboard table -->
@@ -192,23 +192,6 @@
       </thead>
       <tbody id="lb-body">
         <tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:2rem;">Loading...</td></tr>
-      </tbody>
-    </table>
-
-    <!-- Recent attempts -->
-    <div class="sec-title">RECENT ATTEMPTS (LAST 50)</div>
-    <table class="tbl">
-      <thead>
-        <tr>
-          <th>TIME</th>
-          <th>TEAM</th>
-          <th>Q#</th>
-          <th>ANSWER SUBMITTED</th>
-          <th>RESULT</th>
-        </tr>
-      </thead>
-      <tbody id="att-body">
-        <tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:1rem;">Loading...</td></tr>
       </tbody>
     </table>
 
@@ -293,7 +276,7 @@
 
   // ── Load leaderboard ─────────────────────────────────
   async function loadAll() {
-    await Promise.all([loadLeaderboard(), loadAttempts()]);
+    await Promise.all([loadLeaderboard()]);
     document.getElementById('last-updated').textContent =
       'Updated ' + new Date().toLocaleTimeString();
   }
@@ -338,35 +321,6 @@
     }
   }
 
-  async function loadAttempts() {
-    try {
-      const res = await fetch(`${API}/api/admin/attempts`, { headers: adminHeaders() });
-      const { attempts } = await res.json();
-
-      document.getElementById('s-attempts').textContent = attempts.length >= 300 ? '300+' : attempts.length;
-
-      const tbody = document.getElementById('att-body');
-      if (!attempts.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:1rem;">No attempts yet.</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = attempts.slice(0,50).map(a => `
-        <tr>
-          <td class="dim" style="font-size:.78rem;white-space:nowrap;">${fmtDt(a.attempted_at)}</td>
-          <td>${esc(a.team_name)}</td>
-          <td style="font-family:Cinzel,serif;">${a.question_number}</td>
-          <td><code>${esc(a.attempted_answer)}</code></td>
-          <td>${a.is_correct
-            ? '<span class="correct">✓ CORRECT</span>'
-            : '<span class="incorrect">✗ WRONG</span>'}
-          </td>
-        </tr>
-      `).join('');
-    } catch(e) {
-      console.error(e);
-    }
-  }
 
   // ── Team detail modal ────────────────────────────────
   async function showTeam(teamId, teamName) {
@@ -376,7 +330,7 @@
 
     try {
       const res = await fetch(`${API}/api/admin/team/${teamId}`, { headers: adminHeaders() });
-      const { team, submissions, attempts } = await res.json();
+      const { team, submissions } = await res.json();
 
       let html = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.2rem;font-size:.85rem;">
@@ -394,18 +348,6 @@
             <span><strong style="font-family:Cinzel,serif;">Q${s.question_number}</strong></span>
             <span class="dim">${fmtDt(s.solved_at)}</span>
             <span class="correct">+${fmtTime(s.time_taken_seconds)}</span>
-          </div>
-        `).join('');
-      }
-
-      if (attempts.length) {
-        html += `<div style="font-family:Cinzel,serif;font-size:.65rem;letter-spacing:.1em;color:var(--text-dim);margin:1rem 0 .6rem;">ALL ATTEMPTS (LATEST FIRST)</div>`;
-        html += attempts.map(a => `
-          <div class="attempt-row">
-            <span class="attempt-ans">${esc(a.attempted_answer)}</span>
-            <span style="font-family:Cinzel,serif;font-size:.6rem;color:var(--text-dim);">Q${a.question_number}</span>
-            <span>${a.is_correct ? '<span class="correct">✓</span>' : '<span class="incorrect">✗</span>'}</span>
-            <span class="dim" style="font-size:.75rem;">${fmtDt(a.attempted_at)}</span>
           </div>
         `).join('');
       }
