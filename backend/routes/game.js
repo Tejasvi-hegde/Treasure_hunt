@@ -20,13 +20,14 @@ const submitLimiter = rateLimit({
 
 // ── POST /api/game/start ─────────────────────────────────────
 // Called once when the team first opens the game page. Starts their timer.
-router.post("/start", requireAuth, (req, res) => {
+router.post("/start", requireAuth, async (req, res) => {
   const db = getDB();
-  const team = db.prepare("SELECT * FROM teams WHERE id = ?").get(req.team.teamId);
+  const { rows } = await db.query("SELECT * FROM teams WHERE id = $1", [req.team.teamId]);
+  const team = rows[0];
   if (!team) return res.status(404).json({ error: "Team not found." });
 
   if (!team.started_at) {
-    db.prepare("UPDATE teams SET started_at = datetime('now') WHERE id = ?").run(team.id);
+    await db.query("UPDATE teams SET started_at = CURRENT_TIMESTAMP WHERE id = $1", [team.id]);
   }
 
   const q = getQuestionForClient(team.current_question);
@@ -41,9 +42,10 @@ router.post("/start", requireAuth, (req, res) => {
 
 // ── GET /api/game/question ───────────────────────────────────
 // Returns the team's current question — NO answer included.
-router.get("/question", requireAuth, (req, res) => {
+router.get("/question", requireAuth, async (req, res) => {
   const db = getDB();
-  const team = db.prepare("SELECT * FROM teams WHERE id = ?").get(req.team.teamId);
+  const { rows } = await db.query("SELECT * FROM teams WHERE id = $1", [req.team.teamId]);
+  const team = rows[0];
   if (!team) return res.status(404).json({ error: "Team not found." });
 
   if (team.is_finished) {
@@ -63,7 +65,7 @@ router.get("/question", requireAuth, (req, res) => {
 
 // ── POST /api/game/submit ────────────────────────────────────
 // Validates the answer server-side only. NEVER sends the answer to the client.
-router.post("/submit", requireAuth, submitLimiter, (req, res) => {
+router.post("/submit", requireAuth, submitLimiter, async (req, res) => {
   const { answer } = req.body;
 
   if (!answer || typeof answer !== "string") {
@@ -74,22 +76,24 @@ router.post("/submit", requireAuth, submitLimiter, (req, res) => {
   }
 
   const db = getDB();
-  const team = db.prepare("SELECT * FROM teams WHERE id = ?").get(req.team.teamId);
+  const { rows } = await db.query("SELECT * FROM teams WHERE id = $1", [req.team.teamId]);
+  const team = rows[0];
   if (!team) return res.status(404).json({ error: "Team not found." });
   if (team.is_finished) return res.json({ finished: true, correct: false });
 
   // Ensure timer has started
   if (!team.started_at) {
-    db.prepare("UPDATE teams SET started_at = datetime('now') WHERE id = ?").run(team.id);
+    await db.query("UPDATE teams SET started_at = CURRENT_TIMESTAMP WHERE id = $1", [team.id]);
   }
 
   const questionNumber = team.current_question;
   const isCorrect = validateAnswer(questionNumber, answer);
 
   // Log every attempt (including wrong ones) for admin visibility
-  db.prepare(
-    "INSERT INTO attempts (team_id, question_number, attempted_answer, is_correct) VALUES (?, ?, ?, ?)"
-  ).run(team.id, questionNumber, answer.trim(), isCorrect ? 1 : 0);
+  await db.query(
+    "INSERT INTO attempts (team_id, question_number, attempted_answer, is_correct) VALUES ($1, $2, $3, $4)",
+    [team.id, questionNumber, answer.trim(), isCorrect ? 1 : 0]
+  );
 
   if (!isCorrect) {
     return res.json({ correct: false, message: "Incorrect answer. Keep thinking! 🧭" });
@@ -98,28 +102,33 @@ router.post("/submit", requireAuth, submitLimiter, (req, res) => {
   // ── Correct answer: calculate time taken ──────────────────
   let startTime;
   if (questionNumber === 1) {
-    const t = db.prepare("SELECT started_at FROM teams WHERE id = ?").get(team.id);
-    startTime = t.started_at ? new Date(t.started_at + "Z") : new Date();
+    const tRows = await db.query("SELECT started_at FROM teams WHERE id = $1", [team.id]);
+    const t = tRows.rows[0];
+    startTime = t.started_at ? new Date(t.started_at) : new Date();
   } else {
-    const prev = db.prepare(
-      "SELECT solved_at FROM submissions WHERE team_id = ? AND question_number = ?"
-    ).get(team.id, questionNumber - 1);
-    startTime = prev ? new Date(prev.solved_at + "Z") : new Date();
+    const prevRows = await db.query(
+      "SELECT solved_at FROM submissions WHERE team_id = $1 AND question_number = $2",
+      [team.id, questionNumber - 1]
+    );
+    const prev = prevRows.rows[0];
+    startTime = prev ? new Date(prev.solved_at) : new Date();
   }
 
   const timeTakenSeconds = Math.max(0, Math.floor((Date.now() - startTime.getTime()) / 1000));
 
   // Record the submission (IGNORE if somehow duplicate)
-  db.prepare(
-    "INSERT OR IGNORE INTO submissions (team_id, question_number, time_taken_seconds) VALUES (?, ?, ?)"
-  ).run(team.id, questionNumber, timeTakenSeconds);
+  await db.query(
+    "INSERT INTO submissions (team_id, question_number, time_taken_seconds) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+    [team.id, questionNumber, timeTakenSeconds]
+  );
 
   const isLastQuestion = questionNumber === TOTAL_QUESTIONS;
 
   if (isLastQuestion) {
-    db.prepare(
-      "UPDATE teams SET is_finished = 1, finish_time = datetime('now'), current_question = ? WHERE id = ?"
-    ).run(TOTAL_QUESTIONS, team.id);
+    await db.query(
+      "UPDATE teams SET is_finished = 1, finish_time = CURRENT_TIMESTAMP, current_question = $1 WHERE id = $2",
+      [TOTAL_QUESTIONS, team.id]
+    );
 
     return res.json({
       correct: true,
@@ -131,7 +140,7 @@ router.post("/submit", requireAuth, submitLimiter, (req, res) => {
 
   // Advance to next question
   const nextQuestion = questionNumber + 1;
-  db.prepare("UPDATE teams SET current_question = ? WHERE id = ?").run(nextQuestion, team.id);
+  await db.query("UPDATE teams SET current_question = $1 WHERE id = $2", [nextQuestion, team.id]);
 
   const nextQ = getQuestionForClient(nextQuestion);
   return res.json({

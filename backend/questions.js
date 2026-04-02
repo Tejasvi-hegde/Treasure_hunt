@@ -30,12 +30,19 @@ const QUESTIONS = [
   },
   {
     id: 2,
+    text: "Listen to the audio clue and submit your answer.",
+    answer: "all of them",
+    imageUrl: null,
+    audioUrl: "assets/questions/q4.mp3",
+  },
+  {
+    id: 3,
     text: "Is this a good question ?",
     answer: "If this is a good answer",
     imageUrl: null,
   },
   {
-    id: 3,
+    id: 4,
     text: `In his final experiments.-the archivist
      grew fascinated with messages that didnot rely on language
       at-.all He began studying patterns made only of brief and prolonged 
@@ -47,13 +54,6 @@ const QUESTIONS = [
 `,
     answer: "ANVAYA",
     imageUrl: null,
-  },
-  {
-    id: 4,
-    text: "Listen to the audio clue and submit your answer.",
-    answer: "all of them",
-    imageUrl: null,
-    audioUrl: "assets/questions/q4.mp3",
   },
   {
     id: 5,
@@ -133,7 +133,7 @@ function validateAnswer(questionNumber, submittedAnswer) {
     return true;
   }
 
-  if (questionNumber === 4) {
+  if (questionNumber === 2) {
     const normalized = submittedAnswer
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, " ")

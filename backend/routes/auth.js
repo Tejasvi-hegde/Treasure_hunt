@@ -39,18 +39,19 @@ router.post("/register", async (req, res) => {
     const hash = await bcrypt.hash(password, 12);
 
     try {
-      const result = db.prepare(
-        "INSERT INTO teams (name, password_hash) VALUES (?, ?)"
-      ).run(name, hash);
+      const result = await db.query(
+        "INSERT INTO teams (name, password_hash) VALUES ($1, $2) RETURNING id",
+        [name, hash]
+      );
 
       const token = jwt.sign(
-        { teamId: result.lastInsertRowid, teamName: name },
+        { teamId: result.rows[0].id, teamName: name },
         process.env.JWT_SECRET,
         { expiresIn: "24h" }
       );
       return res.status(201).json({ token, teamName: name });
     } catch (err) {
-      if (err.message.includes("UNIQUE")) {
+      if (err.message.includes("unique") || err.code === '23505') {
         return res.status(409).json({ error: "That team name is already taken." });
       }
       throw err;
@@ -71,9 +72,11 @@ router.post("/login", async (req, res) => {
 
   try {
     const db = getDB();
-    const team = db.prepare(
-      "SELECT * FROM teams WHERE name = ? COLLATE NOCASE"
-    ).get(teamName.trim());
+    const result = await db.query(
+      "SELECT * FROM teams WHERE LOWER(name) = LOWER($1)",
+      [teamName.trim()]
+    );
+    const team = result.rows[0];
 
     // Constant-time comparison to avoid timing attacks
     const dummyHash = "$2a$12$invalidhashfortimingprotection000000000000000000000";
@@ -141,12 +144,13 @@ router.post("/quick-start", async (req, res) => {
     for (let attempt = 0; attempt < 5; attempt++) {
       const teamName = buildQuickStartTeamName(cleanHostel, cleanedCandidates);
       try {
-        inserted = db.prepare(
-          "INSERT INTO teams (name, password_hash) VALUES (?, ?)"
-        ).run(teamName, hash);
+        inserted = await db.query(
+          "INSERT INTO teams (name, password_hash) VALUES ($1, $2) RETURNING id",
+          [teamName, hash]
+        );
 
         const token = jwt.sign(
-          { teamId: inserted.lastInsertRowid, teamName },
+          { teamId: inserted.rows[0].id, teamName },
           process.env.JWT_SECRET,
           { expiresIn: "24h" }
         );
@@ -156,7 +160,7 @@ router.post("/quick-start", async (req, res) => {
           teamName,
         });
       } catch (err) {
-        if (!err.message.includes("UNIQUE")) {
+        if (!err.message.includes("unique") && err.code !== '23505') {
           throw err;
         }
       }
