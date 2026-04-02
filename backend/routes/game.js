@@ -89,11 +89,6 @@ router.post("/submit", requireAuth, submitLimiter, async (req, res) => {
   const questionNumber = team.current_question;
   const isCorrect = validateAnswer(questionNumber, answer);
 
-  // Log every attempt (including wrong ones) for admin visibility
-  await db.query(
-    "INSERT INTO attempts (team_id, question_number, attempted_answer, is_correct) VALUES ($1, $2, $3, $4)",
-    [team.id, questionNumber, answer.trim(), isCorrect ? 1 : 0]
-  );
 
   if (!isCorrect) {
     return res.json({ correct: false, message: "Incorrect answer. Keep thinking! 🧭" });

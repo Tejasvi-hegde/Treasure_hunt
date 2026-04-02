@@ -35,15 +35,6 @@ async function initDB() {
         UNIQUE(team_id, question_number)
       );
 
-      CREATE TABLE IF NOT EXISTS attempts (
-        id               SERIAL PRIMARY KEY,
-        team_id          INTEGER NOT NULL,
-        question_number  INTEGER NOT NULL,
-        attempted_answer TEXT    NOT NULL,
-        is_correct       INTEGER NOT NULL DEFAULT 0,
-        attempted_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (team_id) REFERENCES teams(id)
-      );
     `);
     console.log("✅ Postgres Database initialized");
   } catch (error) {

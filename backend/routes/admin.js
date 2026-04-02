@@ -64,36 +64,13 @@ router.get("/team/:teamId", requireAdmin, async (req, res) => {
       [req.params.teamId]
     );
 
-    const { rows: attempts } = await db.query(
-      "SELECT question_number, attempted_answer, is_correct, attempted_at FROM attempts WHERE team_id = $1 ORDER BY attempted_at DESC LIMIT 100",
-      [req.params.teamId]
-    );
-
-    return res.json({ team, submissions, attempts });
+    return res.json({ team, submissions });
   } catch (err) {
     console.error("Team detail error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// ── GET /api/admin/attempts ── (admin only) ──────────────────
-router.get("/attempts", requireAdmin, async (req, res) => {
-  const db = getDB();
-  try {
-    const { rows: attempts } = await db.query(`
-      SELECT a.id, t.name AS team_name, a.question_number,
-             a.attempted_answer, a.is_correct, a.attempted_at
-      FROM attempts a
-      JOIN teams t ON t.id = a.team_id
-      ORDER BY a.attempted_at DESC
-      LIMIT 300
-    `);
-    return res.json({ attempts });
-  } catch (err) {
-    console.error("Attempts error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
 
 // ── GET /api/admin/public-leaderboard ── (admin only) ─────────
 // Kept for backward compatibility, but now requires admin key.
@@ -142,7 +119,6 @@ router.post("/reset-competition", requireAdmin, async (req, res) => {
   }
   const db = getDB();
   try {
-    await db.query("DELETE FROM attempts");
     await db.query("DELETE FROM submissions");
     await db.query(
       "UPDATE teams SET current_question = 1, is_finished = 0, finish_time = NULL, started_at = NULL"
