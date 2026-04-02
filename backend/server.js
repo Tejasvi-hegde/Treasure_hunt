@@ -79,8 +79,13 @@ app.use((err, req, res, _next) => {
 
 // ── Start ─────────────────────────────────────────────────────
 initDB();
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`🚀 Treasure Hunt backend running on port ${PORT}`);
-  console.log(`   FRONTEND_URL: ${process.env.FRONTEND_URL || "* (all origins)"}`);
-});
+
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`🚀 Treasure Hunt backend running on port ${PORT}`);
+    console.log(`   FRONTEND_URL: ${process.env.FRONTEND_URL || "* (all origins)"}`);
+  });
+}
+
+module.exports = app;
