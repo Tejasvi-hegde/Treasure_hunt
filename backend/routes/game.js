@@ -9,12 +9,12 @@ const router = express.Router();
 // Rate-limit answer submissions to prevent brute-force
 // 5 attempts per minute per team
 const submitLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 5,
+  windowMs: 6 * 1000,
+  max: 6,
   keyGenerator: (req) => String(req.team?.teamId ?? req.ip),
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many attempts. Please wait a minute before trying again." },
+  message: { error: "Too many attempts. Please wait 15 seconds before trying again." },
   skipSuccessfulRequests: false,
 });
 
@@ -26,13 +26,17 @@ router.post("/start", requireAuth, async (req, res) => {
   const team = rows[0];
   if (!team) return res.status(404).json({ error: "Team not found." });
 
-  if (!team.started_at) {
-    await db.query("UPDATE teams SET started_at = CURRENT_TIMESTAMP WHERE id = $1", [team.id]);
+  let startedAt = team.started_at;
+
+  if (!startedAt) {
+    const updateRes = await db.query("UPDATE teams SET started_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING started_at", [team.id]);
+    startedAt = updateRes.rows[0].started_at;
   }
 
   const q = getQuestionForClient(team.current_question);
   return res.json({
     started: true,
+    startedAt: startedAt,
     currentQuestion: team.current_question,
     question: q,
     isFinished: team.is_finished === 1,

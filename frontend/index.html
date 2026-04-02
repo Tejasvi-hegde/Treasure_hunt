@@ -215,6 +215,31 @@
     }
     .footer-links a:hover { color: var(--gold-lt); }
 
+    /* ── Guidelines ── */
+    .guidelines {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      color: var(--text-dim);
+    }
+    .guidelines-title {
+      font-family: 'Cinzel', serif;
+      color: var(--gold-lt);
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    .guidelines ul {
+      margin-left: 1.2rem;
+    }
+    .guidelines li {
+      margin-bottom: 0.3rem;
+    }
+
     /* ── Decorative lines ── */
     .ornament {
       display: flex;
@@ -274,6 +299,16 @@
 
         <label for="candidate-3">CANDIDATE 3</label>
         <input id="candidate-3" type="text" placeholder="Enter third candidate" autocomplete="off" />
+
+        <div class="guidelines">
+          <div class="guidelines-title">Guidelines</div>
+          <ul>
+            <li>6 teams will be selected to the next round based on most number of questions solved.</li>
+            <li>If more than 1 teams solve same number of questions, completion time will be considered.</li>
+            <li>Doing too many attempts one by one locks the submit button for 15 seconds.</li>
+            <li>Submission is not case sensitive.</li>
+          </ul>
+        </div>
 
         <button class="btn" id="start-btn" onclick="startQuiz()">START QUIZ</button>
         <div class="msg" id="start-msg"></div>

@@ -392,6 +392,28 @@
       font-size: 1.1rem;
       color: var(--gold-lt);
     }
+    
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000;
+      display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+    }
+    .modal {
+      background: var(--bg2); border: 1px solid var(--border); padding: 2.5rem;
+      border-radius: 2px; text-align: center; max-width: 350px;
+    }
+    .modal p {
+      margin-bottom: 1.5rem; color: var(--text); font-size: 1.2rem; font-style: italic;
+    }
+    .modal-btns {
+      display: flex; gap: 1rem; justify-content: center;
+    }
+    .modal-btn {
+      padding: 0.6rem 1.2rem; border: none; cursor: pointer; font-family: 'Cinzel', serif;
+      font-size: 0.8rem; font-weight: bold; border-radius: 1px; min-width: 80px; letter-spacing: 0.1em;
+    }
+    .btn-no { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-yes { background: var(--red); color: white; }
   </style>
 </head>
 <body>
@@ -400,7 +422,7 @@
     <span class="brand">⚓ TREASURE HUNT</span>
     <div style="display:flex;align-items:center;">
       <span class="team-pill">⚔ <span class="team-name-span" id="header-team">—</span></span>
-      <button class="logout-btn" onclick="logout()">LOGOUT</button>
+      <button class="logout-btn" onclick="showLogoutModal()">LOGOUT</button>
     </div>
   </header>
 
@@ -469,6 +491,16 @@
 
   </main>
 
+  <div class="modal-overlay" id="logout-modal">
+    <div class="modal">
+      <p>you really need to logout ?</p>
+      <div class="modal-btns">
+        <button class="modal-btn btn-no" onclick="closeLogoutModal()">no</button>
+        <button class="modal-btn btn-yes" onclick="confirmLogout()">yes</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ── CONFIG ─────────────────────────────────────────────
     const API = "";
@@ -505,7 +537,8 @@
       if (timerInterval) clearInterval(timerInterval);
       timerInterval = setInterval(() => {
         if (!startedAt) return;
-        const elapsed = Math.floor((Date.now() - new Date(startedAt + 'Z').getTime()) / 1000);
+        const normalized = startedAt.endsWith('Z') ? startedAt : startedAt + 'Z';
+        const elapsed = Math.floor((Date.now() - new Date(normalized).getTime()) / 1000);
         document.getElementById('elapsed-time').textContent = fmtTime(Math.max(0, elapsed));
       }, 1000);
     }
@@ -602,25 +635,15 @@
     }
 
     document.getElementById('q-text').addEventListener('copy', (event) => {
-      if (currentQ !== 1 && currentQ !== 3) {
-        event.preventDefault();
-        event.clipboardData.setData('text/plain', '');
-        return;
-      }
-      const selected = window.getSelection().toString().trim();
-      const source = selected || document.getElementById('q-text').innerText;
-      let transformed = source;
-
-      if (currentQ === 1) {
-        transformed = replaceNorwegianWithJapanese(source);
-      }
-
-      if (currentQ === 3) {
-        transformed = replaceMorseFragments(source);
-      }
-
       event.preventDefault();
-      event.clipboardData.setData('text/plain', transformed);
+      
+      if (currentQ === 1) {
+        const selected = window.getSelection().toString().trim();
+        const source = selected || document.getElementById('q-text').innerText;
+        event.clipboardData.setData('text/plain', replaceNorwegianWithJapanese(source));
+      } else {
+        event.clipboardData.setData('text/plain', 'use your brain baby');
+      }
     });
 
     // ── Load initial state ──────────────────────────────────
@@ -641,7 +664,7 @@
           return;
         }
 
-        startedAt = data.startedAt || new Date().toISOString().replace('Z','');
+        startedAt = data.startedAt || new Date().toISOString();
         document.getElementById('game-screen').style.display = 'block';
         renderQuestion(data.question, data.currentQuestion);
         startTimer();
@@ -679,8 +702,14 @@
           document.getElementById('rate-warn').classList.add('show');
           input.classList.add('shake');
           setTimeout(() => input.classList.remove('shake'), 400);
-          submitLocked = false;
-          document.getElementById('submit-btn').disabled = false;
+          submitLocked = true;
+          document.getElementById('submit-btn').disabled = true;
+          
+          setTimeout(() => {
+            submitLocked = false;
+            document.getElementById('submit-btn').disabled = false;
+            document.getElementById('rate-warn').classList.remove('show');
+          }, 15000);
           return;
         }
 
@@ -723,11 +752,25 @@
       if (e.key === 'Enter') submitAnswer();
     });
 
-    function logout() {
+    function showLogoutModal() {
+      document.getElementById('logout-modal').style.display = 'flex';
+    }
+
+    function closeLogoutModal() {
+      document.getElementById('logout-modal').style.display = 'none';
+    }
+
+    function confirmLogout() {
+      closeLogoutModal();
       sessionStorage.removeItem('th_token');
       sessionStorage.removeItem('th_team');
       clearInterval(timerInterval);
       window.location.href = 'index.html';
+    }
+
+    function logout() {
+      // Also used by init if token is invalid
+      confirmLogout();
     }
 
     // Boot

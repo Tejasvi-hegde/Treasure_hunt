@@ -37,12 +37,6 @@ const QUESTIONS = [
   },
   {
     id: 3,
-    text: "Is this a good question ?",
-    answer: "If this is a good answer",
-    imageUrl: null,
-  },
-  {
-    id: 4,
     text: `In his final experiments.-the archivist
      grew fascinated with messages that didnot rely on language
       at-.all He began studying patterns made only of brief and prolonged 
@@ -54,6 +48,14 @@ const QUESTIONS = [
 `,
     answer: "ANVAYA",
     imageUrl: null,
+  },
+  {
+    id: 4,
+    text: "",
+    answer: "bad intentions in ping pong",
+    imageUrl: "assets/questions/bad.png",
+    imageUrl2: "assets/questions/ping.png",
+    imageJoinText: "in",
   },
   {
     id: 5,
@@ -78,11 +80,9 @@ Where are you now?`,
   },
   {
     id: 8,
-    text: "",
-    answer: "bad intentions in ping pong",
-    imageUrl: "assets/questions/bad.png",
-    imageUrl2: "assets/questions/ping.png",
-    imageJoinText: "in",
+    text: "Is this a good question ?",
+    answer: "If this is a good answer",
+    imageUrl: null,
   },
 ];
 
@@ -143,7 +143,7 @@ function validateAnswer(questionNumber, submittedAnswer) {
     return normalized.split(" ").includes("all");
   }
 
-  if (questionNumber === 8) {
+  if (questionNumber === 4) {
     const normalized = submittedAnswer
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "");
